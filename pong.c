@@ -60,17 +60,17 @@ void reshapeHandler(int w, int h) {
 
 void initPaddles() {
 	leftPaddle.x = 0;
-	leftPaddle.y = 240 - (PADDLE_HEIGHT / 2);
+	leftPaddle.y = (FIELD_HEIGHT / 2) - (PADDLE_HEIGHT / 2);
 	leftPaddle.width = PADDLE_WIDTH;
 	leftPaddle.height = PADDLE_HEIGHT;
 
-	rightPaddle.x = 640 - PADDLE_WIDTH;
-	rightPaddle.y = 240 - (PADDLE_HEIGHT / 2);
+	rightPaddle.x = FIELD_WIDTH - PADDLE_WIDTH;
+	rightPaddle.y = (FIELD_HEIGHT / 2) - (PADDLE_HEIGHT / 2);
 	rightPaddle.width = PADDLE_WIDTH;
 	rightPaddle.height = PADDLE_HEIGHT;
 
-	ball.x = 320 - (BALL_WIDTH / 2);
-	ball.y = 240 - (BALL_HEIGHT / 2);
+	ball.x = (FIELD_WIDTH / 2) - (BALL_WIDTH / 2);
+	ball.y = (FIELD_HEIGHT / 2) - (BALL_HEIGHT / 2);
 	ball.motionX = 2;
 	ball.motionY = 2;
 	ball.width = BALL_WIDTH;
@@ -78,7 +78,6 @@ void initPaddles() {
 }
 
 void keyboardHandler(unsigned char keyChar, int mouseX, int mouseY) {
-	printf("%d, %d, %d\n", (int) keyChar, mouseX, mouseY);
 	switch (keyChar) {
 		case PADDLE_LEFT_UP_KEY:
 			leftPaddle.motionY = 2;
@@ -147,18 +146,13 @@ void frameTimerCallback() {
 	glutPostRedisplay();
 }
 
-/* from http://gamedev.stackexchange.com/questions/8623/a-good-way-to-build-a-game-loop-in-opengl */
-
-static long queuedMilliseconds; // static or whatever, this must persist outside of your loop
-static long lastProcessorTick;
-
 
 int main(int argc, char** argv) {
 	initPaddles();
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-	glutInitWindowSize(640, 480);
+	glutInitWindowSize(FIELD_WIDTH, FIELD_HEIGHT);
 	glutCreateWindow("Pong");
 	glutDisplayFunc(renderFrame);
 	glutReshapeFunc(reshapeHandler);
