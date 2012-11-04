@@ -20,6 +20,11 @@
 #define FIELD_WIDTH 640
 #define FIELD_HEIGHT 480
 
+#define LEFT_SIDE 0
+#define RIGHT_SIDE 1
+
+#define LOSE_SERVE_TIME 60
+
 typedef struct {
 	float x;
 	float y;
@@ -32,6 +37,8 @@ typedef struct {
 Entity leftPaddle;
 Entity rightPaddle;
 Entity ball;
+
+int loseTimer;
 
 void renderPaddle(Entity *paddle) {
 
@@ -80,16 +87,16 @@ void initPaddles() {
 void keyboardHandler(unsigned char keyChar, int mouseX, int mouseY) {
 	switch (keyChar) {
 		case PADDLE_LEFT_UP_KEY:
-			leftPaddle.motionY = 2;
+			leftPaddle.motionY = 4;
 			break;
 		case PADDLE_LEFT_DOWN_KEY:
-			leftPaddle.motionY = -2;
+			leftPaddle.motionY = -4;
 			break;
 		case PADDLE_RIGHT_UP_KEY:
-			rightPaddle.motionY = 2;
+			rightPaddle.motionY = 4;
 			break;
 		case PADDLE_RIGHT_DOWN_KEY:
-			rightPaddle.motionY = -2;
+			rightPaddle.motionY = -4;
 			break;
 		default:
 			break;
@@ -110,9 +117,52 @@ void keyUpHandler(unsigned char keyChar, int mouseX, int mouseY) {
 			break;
 	}
 }
+void handleLose(int side) {
+	loseTimer = LOSE_SERVE_TIME;
+	initPaddles();
+	if (side == RIGHT_SIDE) {
+		ball.motionX *= -1;
+	}
+}
+
+/* yPaddle = distance from bottom of paddle to ball's centre */
+
+float getVertBallSpeedRebound(float yPaddle) {
+	float paddleHalf = PADDLE_HEIGHT / 2;
+	float paddleQuarter = paddleHalf / 2;
+	if (yPaddle < paddleQuarter) {
+		return -4;
+	} else if (yPaddle < paddleHalf - 10) {
+		return -2;
+	} else if (yPaddle < paddleHalf + 10) {
+		return 0;
+	} else if (yPaddle < paddleHalf + paddleQuarter) {
+		return 2;
+	}
+	return 4;
+}
+
+float getHorizBallSpeedRebound(float yPaddle) {
+	float paddleHalf = PADDLE_HEIGHT / 2;
+	float paddleQuarter = paddleHalf / 2;
+	if (yPaddle < paddleQuarter) {
+		return 1;
+	} else if (yPaddle < paddleHalf - 10) {
+		return 2;
+	} else if (yPaddle < paddleHalf + 10) {
+		return 4.5;
+	} else if (yPaddle < paddleHalf + paddleQuarter) {
+		return 2;
+	}
+	return 1;
+}
 
 
 void runPhysics() {
+	if (loseTimer > 0) {
+		loseTimer --;
+		return;
+	}
 	ball.x += ball.motionX;
 	ball.y += ball.motionY;
 	if (ball.x + ball.width >= FIELD_WIDTH || ball.x <= 0) {
@@ -121,6 +171,36 @@ void runPhysics() {
 
 	if (ball.y + ball.height >= FIELD_HEIGHT || ball.y <= 0) {
 		ball.motionY *= -1;
+	}
+
+	if (ball.x <= leftPaddle.x + leftPaddle.width) {
+		float ballCentre = ball.y + (ball.width / 2);
+		printf("%f %f\n", ballCentre, leftPaddle.y);
+		if (ballCentre > leftPaddle.y && ballCentre <= leftPaddle.y + leftPaddle.height) {
+			float yOffset = ballCentre - leftPaddle.y;
+			ball.motionX = getHorizBallSpeedRebound(yOffset);
+			ball.motionY = getVertBallSpeedRebound(yOffset);
+			ball.x = leftPaddle.x + leftPaddle.width + 1;
+		}
+		if (ball.x <= 0) {
+			printf("Left loses\n");
+			handleLose(LEFT_SIDE);
+		}
+	}
+
+	if (ball.x + ball.width >= rightPaddle.x) {
+		float ballCentre = ball.y + (ball.width / 2);
+		printf("%f %f\n", ballCentre, leftPaddle.y);
+		if (ballCentre > rightPaddle.y && ballCentre <= rightPaddle.y + rightPaddle.height) {
+			float yOffset = ballCentre - rightPaddle.y;
+			ball.motionX = -1 * getHorizBallSpeedRebound(yOffset);
+			ball.motionY = getVertBallSpeedRebound(yOffset);
+			ball.x = rightPaddle.x - 1 - ball.width;
+		}
+		if (ball.x + ball.width >= FIELD_WIDTH) {
+			printf("Right loses\n");
+			handleLose(RIGHT_SIDE);
+		}
 	}
 
 	float newPaddleY = leftPaddle.y + leftPaddle.motionY;
